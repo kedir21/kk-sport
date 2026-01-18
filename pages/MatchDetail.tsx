@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { MatchDetail as MatchDetailType, Stream } from '../types';
-import { Loader2, AlertTriangle, MonitorPlay, ChevronLeft, ShieldCheck, Hd, AlertCircle } from 'lucide-react';
+import { Loader2, AlertTriangle, MonitorPlay, ChevronLeft, ShieldCheck, Monitor, AlertCircle } from 'lucide-react';
 import { getImageUrl } from '../utils/formatters';
 
 export const MatchDetail: React.FC = () => {
@@ -150,7 +150,7 @@ export const MatchDetail: React.FC = () => {
                >
                  <span>Server {stream.streamNo}</span>
                  <span className="text-xs opacity-70 uppercase">({stream.language})</span>
-                 {stream.hd && <Hd className="w-4 h-4" />}
+                 {stream.hd && <Monitor className="w-4 h-4" />}
                </button>
              ))}
            </div>
