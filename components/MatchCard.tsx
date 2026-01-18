@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Calendar, Star } from 'lucide-react';
+import { PlayCircle, Clock, Calendar, Star } from 'lucide-react';
 import { APIMatch } from '../types';
 import { formatMatchTime, getImageUrl } from '../utils/formatters';
 import { Link } from 'react-router-dom';
@@ -11,83 +11,82 @@ interface MatchCardProps {
 
 export const MatchCard: React.FC<MatchCardProps> = ({ match, isLive = false }) => {
   const { id, title, date, teams, popular, category } = match;
-
-  // Determine display logic based on if teams object exists or if we rely on title
   const hasTeamData = teams && teams.home && teams.away;
   
   return (
     <Link 
       to={`/match/${id}`}
-      className="group block bg-brand-800 rounded-lg overflow-hidden border border-brand-700 hover:border-brand-500 transition-all duration-200 shadow-lg hover:shadow-brand-500/10"
+      className="group relative block bg-surfaceHighlight/40 backdrop-blur-sm rounded-xl overflow-hidden border border-white/5 hover:border-primary-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-primary-500/10 hover:-translate-y-1"
     >
-      <div className="p-4">
-        {/* Header: League/Category & Status */}
-        <div className="flex justify-between items-center mb-4 text-xs text-gray-400 uppercase tracking-wider font-semibold">
-          <div className="flex items-center gap-2">
-             <span className="bg-brand-900 px-2 py-1 rounded text-gray-300">{category}</span>
-             {popular && <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />}
-          </div>
-          
-          <div className="flex items-center gap-1">
-            {isLive ? (
-              <span className="flex items-center gap-1 text-red-500 font-bold animate-pulse">
-                <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                LIVE
-              </span>
-            ) : (
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                {formatMatchTime(date)}
-              </span>
-            )}
-          </div>
+      {/* Top Banner */}
+      <div className="px-5 pt-5 pb-2 flex justify-between items-start">
+        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-white/5 text-gray-400 group-hover:bg-primary-500/10 group-hover:text-primary-500 transition-colors">
+          {category}
+        </span>
+        
+        <div className="flex items-center gap-2">
+          {popular && <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500 drop-shadow-sm" />}
+          {isLive ? (
+            <span className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-red-500/10 border border-red-500/20">
+              <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
+              <span className="text-[10px] font-bold text-red-500 uppercase tracking-wide">Live</span>
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
+              <Calendar className="w-3.5 h-3.5" />
+              {formatMatchTime(date)}
+            </span>
+          )}
         </div>
+      </div>
 
-        {/* Teams Display */}
+      <div className="p-5 pt-2">
         {hasTeamData ? (
-          <div className="flex items-center justify-between gap-4">
-            {/* Home Team */}
-            <div className="flex-1 flex flex-col items-center text-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-brand-900 p-2 flex items-center justify-center border border-brand-700 group-hover:border-brand-500 transition-colors">
-                 <img 
+          <div className="flex items-center justify-between py-2">
+            {/* Home */}
+            <div className="flex flex-col items-center gap-3 w-[40%]">
+              <div className="relative w-14 h-14 p-2 bg-black/20 rounded-full ring-1 ring-white/5 group-hover:ring-primary-500/30 transition-all">
+                <img 
                     src={getImageUrl(teams?.home?.badge)} 
                     alt={teams?.home?.name}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain drop-shadow-lg"
                     onError={(e) => (e.currentTarget.src = 'https://picsum.photos/50/50')}
-                 />
+                />
               </div>
-              <span className="text-sm font-medium text-gray-200 line-clamp-2 min-h-[2.5em]">{teams?.home?.name}</span>
+              <span className="text-xs font-semibold text-gray-300 text-center leading-tight line-clamp-2">{teams?.home?.name}</span>
             </div>
 
-            {/* VS Badge */}
-            <div className="text-gray-500 font-bold text-lg italic">VS</div>
+            {/* VS */}
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-xl font-black text-white/10 group-hover:text-white/80 transition-colors italic">VS</span>
+            </div>
 
-            {/* Away Team */}
-            <div className="flex-1 flex flex-col items-center text-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-brand-900 p-2 flex items-center justify-center border border-brand-700 group-hover:border-brand-500 transition-colors">
+            {/* Away */}
+            <div className="flex flex-col items-center gap-3 w-[40%]">
+              <div className="relative w-14 h-14 p-2 bg-black/20 rounded-full ring-1 ring-white/5 group-hover:ring-primary-500/30 transition-all">
                 <img 
                     src={getImageUrl(teams?.away?.badge)} 
                     alt={teams?.away?.name}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain drop-shadow-lg"
                     onError={(e) => (e.currentTarget.src = 'https://picsum.photos/50/50')}
-                 />
+                />
               </div>
-              <span className="text-sm font-medium text-gray-200 line-clamp-2 min-h-[2.5em]">{teams?.away?.name}</span>
+              <span className="text-xs font-semibold text-gray-300 text-center leading-tight line-clamp-2">{teams?.away?.name}</span>
             </div>
           </div>
         ) : (
-          <div className="py-6 text-center">
-            <h3 className="text-lg font-semibold text-white group-hover:text-brand-500 transition-colors">{title}</h3>
+          <div className="h-28 flex items-center justify-center text-center">
+            <h3 className="text-sm font-bold text-gray-200 group-hover:text-primary-400 transition-colors px-2">{title}</h3>
           </div>
         )}
+      </div>
 
-        {/* CTA */}
-        <div className="mt-4 pt-3 border-t border-brand-700 flex justify-center">
-            <span className="inline-flex items-center gap-2 text-sm text-brand-400 font-medium group-hover:text-white transition-colors">
-                <Play className="w-4 h-4 fill-current" />
-                Watch Stream
-            </span>
-        </div>
+      {/* Hover Overlay Action */}
+      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+        <button className="flex items-center gap-2 px-6 py-2.5 bg-primary-600 text-white rounded-full font-semibold text-sm shadow-lg shadow-primary-600/30 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+          <PlayCircle className="w-4 h-4" />
+          Watch Stream
+        </button>
       </div>
     </Link>
   );

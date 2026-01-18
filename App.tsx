@@ -12,14 +12,14 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <div className="min-h-screen bg-brand-900 text-gray-100 font-sans flex flex-col">
+      <div className="min-h-screen bg-background text-gray-100 font-sans flex flex-col selection:bg-primary-500 selection:text-white">
         <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
         
-        <div className="flex flex-1 overflow-hidden relative">
+        <div className="flex pt-16 h-screen overflow-hidden">
           <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
           
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 w-full">
-            <div className="max-w-7xl mx-auto">
+          <main className="flex-1 overflow-y-auto w-full relative">
+            <div className="p-4 md:p-8 lg:p-10 max-w-[1600px] mx-auto min-h-[calc(100vh-10rem)]">
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/schedule" element={<Schedule />} />
@@ -28,10 +28,11 @@ const App: React.FC = () => {
               </Routes>
             </div>
             
-            {/* Simple Footer inside scrollable area */}
-            <footer className="mt-12 py-8 border-t border-brand-800 text-center text-gray-500 text-sm">
-              <p className="mb-2">Disclaimer: This site does not host any content. All streams are embedded from external sources.</p>
-              <p>&copy; 2024 720pStreams Clone. All rights reserved.</p>
+            <footer className="py-8 text-center text-gray-600 text-xs border-t border-white/5 mt-auto">
+              <div className="max-w-4xl mx-auto px-4">
+                <p className="mb-2">Disclaimer: StreamZone does not host any content. All streams are embedded from external sources.</p>
+                <p>&copy; 2024 StreamZone. All rights reserved.</p>
+              </div>
             </footer>
           </main>
         </div>
