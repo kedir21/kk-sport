@@ -14,7 +14,8 @@ import {
   Maximize2,
   Minimize2,
   RotateCw,
-  Zap
+  Zap,
+  Play
 } from 'lucide-react';
 import { getImageUrl } from '../utils/formatters';
 
@@ -27,8 +28,10 @@ export const MatchDetail: React.FC = () => {
   
   // UI States
   const [isWideMode, setIsWideMode] = useState(false);
+  
+  // Default to enabled, but allow easy disable
   const [adBlockEnabled, setAdBlockEnabled] = useState(true);
-  const [iframeKey, setIframeKey] = useState(0); // Used to force reload iframe
+  const [iframeKey, setIframeKey] = useState(0);
 
   useEffect(() => {
     const loadData = async () => {
@@ -62,8 +65,8 @@ export const MatchDetail: React.FC = () => {
 
   const toggleAdBlock = () => {
     setAdBlockEnabled(!adBlockEnabled);
-    // We need to reload the iframe for sandbox attributes to take effect/reset
-    setTimeout(() => refreshStream(), 100);
+    // Key change forces iframe unmount/remount
+    setIframeKey(prev => prev + 1);
   };
 
   if (loading) {
@@ -89,14 +92,13 @@ export const MatchDetail: React.FC = () => {
   const { title, teams, category } = match;
   const hasTeamData = teams && teams.home && teams.away;
 
-  // Sandbox rules: 
-  // - allow-scripts: needed for player JS
-  // - allow-same-origin: needed for some players to function
-  // - allow-presentation: needed for fullscreen
-  // - OMITTING 'allow-popups' effectively blocks new windows
+  // REFINED SANDBOX RULES
+  // We include 'allow-modals' and 'allow-forms' which are often required for video controls.
+  // We STRATEGICALLY OMIT 'allow-popups' to block new windows.
+  // We omit 'allow-top-navigation' to prevent the iframe from redirecting the whole page.
   const sandboxRules = adBlockEnabled 
-    ? "allow-forms allow-pointer-lock allow-same-origin allow-scripts allow-top-navigation-by-user-activation allow-presentation" 
-    : undefined; // undefined removes the attribute, allowing everything
+    ? "allow-forms allow-modals allow-pointer-lock allow-same-origin allow-scripts allow-presentation" 
+    : undefined; 
 
   return (
     <div className={`mx-auto pb-12 animate-fade-in transition-all duration-500 ${isWideMode ? 'max-w-[1800px]' : 'max-w-6xl'}`}>
@@ -111,10 +113,9 @@ export const MatchDetail: React.FC = () => {
         </Link>
       </div>
 
-      {/* Header Info (Hidden in Wide Mode to focus on video) */}
+      {/* Header Info */}
       {!isWideMode && (
         <div className="bg-surfaceHighlight/50 backdrop-blur-md rounded-t-2xl p-6 md:p-8 border border-white/5 relative overflow-hidden mb-1">
-           {/* Background glow */}
            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-primary-900/10 to-transparent pointer-events-none"></div>
 
            {hasTeamData ? (
@@ -158,38 +159,39 @@ export const MatchDetail: React.FC = () => {
 
       {/* Player Controls Bar */}
       <div className={`
-        flex items-center justify-between p-3 bg-surface border-x border-t border-white/5 
+        flex flex-wrap items-center justify-between p-3 bg-surface border-x border-t border-white/5 gap-y-2
         ${isWideMode ? 'rounded-t-2xl' : !hasTeamData ? 'rounded-t-2xl' : ''}
       `}>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-sm font-medium text-white px-3 border-l-2 border-primary-500">
                <Tv className="w-4 h-4 text-primary-500" />
-               <span>Server {activeStream?.streamNo || 1}</span>
+               <span className="hidden sm:inline">Server {activeStream?.streamNo || 1}</span>
+               <span className="sm:hidden">S{activeStream?.streamNo || 1}</span>
             </div>
             
             {/* Ad Block Toggle */}
             <button 
               onClick={toggleAdBlock}
               className={`
-                hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all
+                flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all
                 ${adBlockEnabled 
-                  ? 'bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20' 
+                  ? 'bg-primary-600/20 border-primary-500/50 text-primary-400 hover:bg-primary-600/30' 
                   : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20'}
               `}
-              title={adBlockEnabled ? "Ads are blocked. Click to disable if video doesn't load." : "Ads allowed. Click to block popups."}
+              title="Toggle AdBlock Sandbox"
             >
               {adBlockEnabled ? <ShieldCheck className="w-3.5 h-3.5" /> : <ShieldAlert className="w-3.5 h-3.5" />}
-              {adBlockEnabled ? 'Ad-Shield: Active' : 'Ad-Shield: Disabled'}
+              {adBlockEnabled ? 'Ads Blocked' : 'Ads Allowed'}
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 ml-auto">
              <button 
                onClick={refreshStream}
-               className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-               title="Refresh Stream"
+               className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors text-gray-300"
              >
-               <RotateCw className="w-4 h-4" />
+               <RotateCw className="w-3.5 h-3.5" />
+               <span className="hidden sm:inline">Reload</span>
              </button>
              
              <button 
@@ -202,27 +204,39 @@ export const MatchDetail: React.FC = () => {
           </div>
       </div>
 
-      {/* Video Player */}
-      <div className={`bg-black relative aspect-video w-full shadow-2xl z-20 overflow-hidden group border-x border-white/5 ${isWideMode ? '' : ''}`}>
+      {/* Video Player Container */}
+      <div className="bg-black relative aspect-video w-full shadow-2xl z-20 overflow-hidden group border-x border-white/5">
         {activeStream ? (
-           <div className="w-full h-full relative">
+           <div className="w-full h-full relative group">
+             {/* Player Overlay (Optional click-to-play prompt if needed, but keeping it clean for now) */}
+             
              <iframe 
-               key={iframeKey} // Force reload when key changes
+               key={`${activeStream.id}-${iframeKey}-${adBlockEnabled ? 'safe' : 'unsafe'}`} 
                src={activeStream.embedUrl} 
                title={title}
                className="w-full h-full border-0"
                allowFullScreen
-               allow="encrypted-media; fullscreen; picture-in-picture"
-               sandbox={sandboxRules} // Ad-blocking magic
+               allow="encrypted-media; fullscreen; picture-in-picture; autoplay"
+               sandbox={sandboxRules}
                loading="lazy"
                referrerPolicy="no-referrer"
              />
+
+             {/* Helpful overlay if adblock is on, enticing user to click only if needed */}
+             {adBlockEnabled && (
+                <div className="absolute top-4 right-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                    <div className="bg-black/80 backdrop-blur-sm text-xs text-white px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+                        <ShieldCheck className="w-3 h-3 text-green-400" />
+                        <span>Popup Protection Active</span>
+                    </div>
+                </div>
+             )}
            </div>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-surfaceHighlight/20 backdrop-blur-sm text-center p-6">
              <Tv className="w-16 h-16 text-gray-700 mb-4" />
              <p className="text-xl font-medium text-gray-300">Stream Offline</p>
-             <p className="text-gray-500 mt-2 text-sm">Please select a different server or check back later.</p>
+             <p className="text-gray-500 mt-2 text-sm">Please select a different server below.</p>
           </div>
         )}
       </div>
@@ -230,28 +244,19 @@ export const MatchDetail: React.FC = () => {
       {/* Stream Info & Server Selector */}
       <div className="bg-surfaceHighlight/50 backdrop-blur-md rounded-b-2xl p-6 border border-white/5">
          
-         {/* Mobile Ad Block Toggle */}
-         <div className="md:hidden mb-6">
-            <button 
-              onClick={toggleAdBlock}
-              className={`
-                w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold border transition-all
-                ${adBlockEnabled 
-                  ? 'bg-green-500/10 border-green-500/30 text-green-400' 
-                  : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'}
-              `}
-            >
-              {adBlockEnabled ? <ShieldCheck className="w-4 h-4" /> : <ShieldAlert className="w-4 h-4" />}
-              {adBlockEnabled ? 'Ad-Shield Active (Safe)' : 'Ad-Shield Disabled (Use if stuck)'}
-            </button>
-            <p className="text-[10px] text-center text-gray-500 mt-2">
-              If the video doesn't play, try disabling Ad-Shield.
-            </p>
-         </div>
-
-         <div className="flex items-center gap-3 mb-4">
-           <Settings className="w-5 h-5 text-gray-400" />
-           <h3 className="text-white font-bold">Switch Server</h3>
+         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <Settings className="w-5 h-5 text-gray-400" />
+              <h3 className="text-white font-bold">Source Selection</h3>
+            </div>
+            
+            {/* Troubleshooting Tip */}
+            {adBlockEnabled && (
+                <div className="flex items-center gap-2 text-xs text-yellow-500/80 bg-yellow-500/5 px-3 py-1.5 rounded-lg border border-yellow-500/10">
+                    <Info className="w-3.5 h-3.5" />
+                    <span>Video black screen? Try disabling "Ads Blocked" above.</span>
+                </div>
+            )}
          </div>
          
          {match.sources && match.sources.length > 0 ? (
@@ -261,28 +266,32 @@ export const MatchDetail: React.FC = () => {
                  key={stream.id}
                  onClick={() => {
                    setActiveStream(stream);
-                   setIframeKey(prev => prev + 1); // Reset iframe on change
+                   setIframeKey(prev => prev + 1);
                  }}
                  className={`
-                   group relative px-4 py-3 rounded-xl text-sm font-medium flex flex-col items-center gap-1 transition-all
+                   group relative px-4 py-3 rounded-xl text-sm font-medium flex flex-col items-center gap-1 transition-all overflow-hidden
                    ${activeStream?.id === stream.id 
-                     ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/20' 
+                     ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/20 border border-primary-500/50' 
                      : 'bg-black/40 text-gray-400 hover:bg-white/5 hover:text-white border border-white/5'}
                  `}
                >
-                 <div className="flex items-center gap-2">
+                 <div className="flex items-center gap-2 relative z-10">
                     <span className="uppercase tracking-wider text-[10px]">Server {stream.streamNo}</span>
                  </div>
-                 <div className="flex items-center gap-1 text-xs opacity-80">
-                   {stream.hd && <span className="bg-white/20 px-1 rounded text-[9px] font-bold">HD</span>}
-                   <span className="capitalize">{stream.language}</span>
+                 <div className="flex items-center gap-1 text-xs opacity-80 relative z-10">
+                   {stream.hd && <span className="bg-white/20 px-1.5 py-0.5 rounded text-[9px] font-bold">HD</span>}
+                   <span className="capitalize truncate max-w-[80px]">{stream.language}</span>
                  </div>
                  
+                 {/* Active Indicator */}
                  {activeStream?.id === stream.id && (
-                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                    </span>
+                    <>
+                        <div className="absolute inset-0 bg-gradient-to-tr from-primary-600 to-primary-500 opacity-100 z-0"></div>
+                        <span className="absolute top-2 right-2 flex h-2 w-2 z-10">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                        </span>
+                    </>
                  )}
                </button>
              ))}
@@ -292,16 +301,28 @@ export const MatchDetail: React.FC = () => {
          )}
 
          {/* Help / Info Box */}
-         <div className="mt-6 flex items-start gap-3 p-4 bg-primary-900/10 border border-primary-500/10 rounded-lg">
-            <Zap className="w-5 h-5 text-primary-400 shrink-0 mt-0.5" />
-            <div className="text-xs text-primary-200/80 leading-relaxed">
-              <p className="font-bold text-primary-400 mb-1">Streaming Tips</p>
-              <ul className="list-disc pl-4 space-y-1">
-                <li>If the video is stuck, try the <strong>Refresh</strong> button above the player.</li>
-                <li>Some streams require <strong>Ad-Shield</strong> to be disabled to start. Toggle it if you see a black screen.</li>
-                <li>For best quality, look for servers marked with <strong>HD</strong>.</li>
-              </ul>
-            </div>
+         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div className="p-4 bg-primary-900/10 border border-primary-500/10 rounded-xl flex items-start gap-3">
+                <Zap className="w-5 h-5 text-primary-400 shrink-0 mt-0.5" />
+                <div>
+                    <h4 className="font-bold text-primary-400 text-sm mb-1">Playback Issues?</h4>
+                    <p className="text-xs text-primary-200/70 leading-relaxed">
+                        If the player is stuck on loading or shows a black screen, click the 
+                        <span className="inline-block mx-1 font-bold text-yellow-400 border border-yellow-500/30 px-1 rounded bg-yellow-500/10">Ads Allowed</span> 
+                        button. Some free streams require popups to initialize.
+                    </p>
+                </div>
+             </div>
+             
+             <div className="p-4 bg-surfaceHighlight border border-white/5 rounded-xl flex items-start gap-3">
+                <ShieldCheck className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
+                <div>
+                    <h4 className="font-bold text-green-400 text-sm mb-1">Safe Streaming</h4>
+                    <p className="text-xs text-gray-400 leading-relaxed">
+                        We sandbox all players to protect your device. If you see ads, they are embedded in the video source and not hosted by us. Never download anything from player popups.
+                    </p>
+                </div>
+             </div>
          </div>
       </div>
     </div>
