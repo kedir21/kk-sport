@@ -1,0 +1,5 @@
+{
+  "name": "720pStreams Clone",
+  "description": "A responsive sports streaming application cloning the functionality of 720pstreams using the LiveSport API. Features live scores, schedules, and stream embedding.",
+  "requestFramePermissions": []
+}
