@@ -6,16 +6,14 @@ import {
   Loader2, 
   AlertTriangle, 
   ChevronLeft, 
-  ShieldCheck, 
-  ShieldAlert,
   Settings,
   Tv,
-  Info,
   Maximize2,
   Minimize2,
   RotateCw,
-  Zap,
-  Play
+  Globe,
+  Server,
+  Signal
 } from 'lucide-react';
 import { getImageUrl } from '../utils/formatters';
 
@@ -28,9 +26,6 @@ export const MatchDetail: React.FC = () => {
   
   // UI States
   const [isWideMode, setIsWideMode] = useState(false);
-  
-  // Default to enabled, but allow easy disable
-  const [adBlockEnabled, setAdBlockEnabled] = useState(true);
   const [iframeKey, setIframeKey] = useState(0);
 
   useEffect(() => {
@@ -43,7 +38,7 @@ export const MatchDetail: React.FC = () => {
         const data = await api.getMatchDetail(matchId);
         
         if (!data || !data.id) {
-            throw new Error("Match not found");
+            throw new Error("Match data is incomplete or missing.");
         }
 
         setMatch(data);
@@ -51,7 +46,12 @@ export const MatchDetail: React.FC = () => {
           setActiveStream(data.sources[0]);
         }
       } catch (err: any) {
-        setError(err.message || "Could not load match details.");
+        // Handle 404 specifically
+        if (err.message && (err.message.includes('404') || err.message.includes('Match not found'))) {
+          setError("This match is no longer available or the stream has ended.");
+        } else {
+          setError(err.message || "Could not load match details.");
+        }
       } finally {
         setLoading(false);
       }
@@ -60,12 +60,6 @@ export const MatchDetail: React.FC = () => {
   }, [matchId]);
 
   const refreshStream = () => {
-    setIframeKey(prev => prev + 1);
-  };
-
-  const toggleAdBlock = () => {
-    setAdBlockEnabled(!adBlockEnabled);
-    // Key change forces iframe unmount/remount
     setIframeKey(prev => prev + 1);
   };
 
@@ -81,9 +75,10 @@ export const MatchDetail: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8 bg-surfaceHighlight/30 rounded-2xl mx-4 border border-white/5">
         <AlertTriangle className="w-12 h-12 text-yellow-500 mb-4" />
-        <h2 className="text-xl font-bold text-white mb-2">{error ? "Error" : "Match Not Found"}</h2>
-        <Link to="/" className="mt-4 px-6 py-2 bg-white text-black font-medium rounded-full hover:bg-gray-200 transition-colors">
-          Return Home
+        <h2 className="text-xl font-bold text-white mb-2">Stream Unavailable</h2>
+        <p className="text-gray-400 mb-6 max-w-md">{error}</p>
+        <Link to="/" className="px-6 py-2 bg-white text-black font-medium rounded-full hover:bg-gray-200 transition-colors">
+          Browse Live Matches
         </Link>
       </div>
     );
@@ -91,14 +86,6 @@ export const MatchDetail: React.FC = () => {
 
   const { title, teams, category } = match;
   const hasTeamData = teams && teams.home && teams.away;
-
-  // REFINED SANDBOX RULES
-  // We include 'allow-modals' and 'allow-forms' which are often required for video controls.
-  // We STRATEGICALLY OMIT 'allow-popups' to block new windows.
-  // We omit 'allow-top-navigation' to prevent the iframe from redirecting the whole page.
-  const sandboxRules = adBlockEnabled 
-    ? "allow-forms allow-modals allow-pointer-lock allow-same-origin allow-scripts allow-presentation" 
-    : undefined; 
 
   return (
     <div className={`mx-auto pb-12 animate-fade-in transition-all duration-500 ${isWideMode ? 'max-w-[1800px]' : 'max-w-6xl'}`}>
@@ -168,21 +155,6 @@ export const MatchDetail: React.FC = () => {
                <span className="hidden sm:inline">Server {activeStream?.streamNo || 1}</span>
                <span className="sm:hidden">S{activeStream?.streamNo || 1}</span>
             </div>
-            
-            {/* Ad Block Toggle */}
-            <button 
-              onClick={toggleAdBlock}
-              className={`
-                flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all
-                ${adBlockEnabled 
-                  ? 'bg-primary-600/20 border-primary-500/50 text-primary-400 hover:bg-primary-600/30' 
-                  : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20'}
-              `}
-              title="Toggle AdBlock Sandbox"
-            >
-              {adBlockEnabled ? <ShieldCheck className="w-3.5 h-3.5" /> : <ShieldAlert className="w-3.5 h-3.5" />}
-              {adBlockEnabled ? 'Ads Blocked' : 'Ads Allowed'}
-            </button>
           </div>
 
           <div className="flex items-center gap-2 ml-auto">
@@ -208,29 +180,17 @@ export const MatchDetail: React.FC = () => {
       <div className="bg-black relative aspect-video w-full shadow-2xl z-20 overflow-hidden group border-x border-white/5">
         {activeStream ? (
            <div className="w-full h-full relative group">
-             {/* Player Overlay (Optional click-to-play prompt if needed, but keeping it clean for now) */}
-             
              <iframe 
-               key={`${activeStream.id}-${iframeKey}-${adBlockEnabled ? 'safe' : 'unsafe'}`} 
+               key={`${activeStream.id}-${iframeKey}`} 
                src={activeStream.embedUrl} 
                title={title}
                className="w-full h-full border-0"
                allowFullScreen
-               allow="encrypted-media; fullscreen; picture-in-picture; autoplay"
-               sandbox={sandboxRules}
+               // Standard permissions for max compatibility
+               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                loading="lazy"
                referrerPolicy="no-referrer"
              />
-
-             {/* Helpful overlay if adblock is on, enticing user to click only if needed */}
-             {adBlockEnabled && (
-                <div className="absolute top-4 right-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                    <div className="bg-black/80 backdrop-blur-sm text-xs text-white px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
-                        <ShieldCheck className="w-3 h-3 text-green-400" />
-                        <span>Popup Protection Active</span>
-                    </div>
-                </div>
-             )}
            </div>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-surfaceHighlight/20 backdrop-blur-sm text-center p-6">
@@ -247,20 +207,12 @@ export const MatchDetail: React.FC = () => {
          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
               <Settings className="w-5 h-5 text-gray-400" />
-              <h3 className="text-white font-bold">Source Selection</h3>
+              <h3 className="text-white font-bold">Select Source</h3>
             </div>
-            
-            {/* Troubleshooting Tip */}
-            {adBlockEnabled && (
-                <div className="flex items-center gap-2 text-xs text-yellow-500/80 bg-yellow-500/5 px-3 py-1.5 rounded-lg border border-yellow-500/10">
-                    <Info className="w-3.5 h-3.5" />
-                    <span>Video black screen? Try disabling "Ads Blocked" above.</span>
-                </div>
-            )}
          </div>
          
          {match.sources && match.sources.length > 0 ? (
-           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
              {match.sources.map((stream) => (
                <button
                  key={stream.id}
@@ -269,61 +221,61 @@ export const MatchDetail: React.FC = () => {
                    setIframeKey(prev => prev + 1);
                  }}
                  className={`
-                   group relative px-4 py-3 rounded-xl text-sm font-medium flex flex-col items-center gap-1 transition-all overflow-hidden
+                   group relative p-4 rounded-xl text-left transition-all overflow-hidden border
                    ${activeStream?.id === stream.id 
-                     ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/20 border border-primary-500/50' 
-                     : 'bg-black/40 text-gray-400 hover:bg-white/5 hover:text-white border border-white/5'}
+                     ? 'bg-primary-600/10 border-primary-500/50 shadow-[0_0_15px_rgba(59,130,246,0.15)]' 
+                     : 'bg-black/40 border-white/5 hover:border-white/10 hover:bg-white/5'}
                  `}
                >
-                 <div className="flex items-center gap-2 relative z-10">
-                    <span className="uppercase tracking-wider text-[10px]">Server {stream.streamNo}</span>
-                 </div>
-                 <div className="flex items-center gap-1 text-xs opacity-80 relative z-10">
-                   {stream.hd && <span className="bg-white/20 px-1.5 py-0.5 rounded text-[9px] font-bold">HD</span>}
-                   <span className="capitalize truncate max-w-[80px]">{stream.language}</span>
-                 </div>
-                 
-                 {/* Active Indicator */}
-                 {activeStream?.id === stream.id && (
-                    <>
-                        <div className="absolute inset-0 bg-gradient-to-tr from-primary-600 to-primary-500 opacity-100 z-0"></div>
-                        <span className="absolute top-2 right-2 flex h-2 w-2 z-10">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                  {/* Header: Server ID + Status */}
+                  <div className="flex items-center justify-between mb-3">
+                     <span className={`text-xs font-bold uppercase tracking-wider ${activeStream?.id === stream.id ? 'text-primary-400' : 'text-gray-400'}`}>
+                        Server {stream.streamNo}
+                     </span>
+                     {stream.hd ? (
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded border border-green-400/20">
+                           HD 720p+
                         </span>
-                    </>
+                     ) : (
+                        <span className="text-[10px] font-bold text-gray-500 bg-gray-500/10 px-1.5 py-0.5 rounded border border-gray-500/10">
+                           SD
+                        </span>
+                     )}
+                  </div>
+
+                  {/* Metadata Rows */}
+                  <div className="space-y-1.5">
+                     <div className="flex items-center gap-2 text-xs text-gray-300">
+                        <Globe className="w-3.5 h-3.5 text-gray-500" />
+                        <span className="capitalize">{stream.language}</span>
+                     </div>
+                     <div className="flex items-center gap-2 text-xs text-gray-300">
+                        <Server className="w-3.5 h-3.5 text-gray-500" />
+                        <span className="capitalize truncate" title={stream.source}>Provider: {stream.source}</span>
+                     </div>
+                  </div>
+                 
+                 {/* Active Indicator Pulse */}
+                 {activeStream?.id === stream.id && (
+                    <div className="absolute top-3 right-3 flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
+                    </div>
+                 )}
+                 
+                 {/* Selection Highlight Bottom Bar */}
+                 {activeStream?.id === stream.id && (
+                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500"></div>
                  )}
                </button>
              ))}
            </div>
          ) : (
-            <p className="text-gray-500 text-sm">No servers available.</p>
+            <div className="p-8 text-center bg-black/20 rounded-xl border border-dashed border-white/10">
+               <Signal className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+               <p className="text-gray-500 text-sm">No streaming servers available for this match yet.</p>
+            </div>
          )}
-
-         {/* Help / Info Box */}
-         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div className="p-4 bg-primary-900/10 border border-primary-500/10 rounded-xl flex items-start gap-3">
-                <Zap className="w-5 h-5 text-primary-400 shrink-0 mt-0.5" />
-                <div>
-                    <h4 className="font-bold text-primary-400 text-sm mb-1">Playback Issues?</h4>
-                    <p className="text-xs text-primary-200/70 leading-relaxed">
-                        If the player is stuck on loading or shows a black screen, click the 
-                        <span className="inline-block mx-1 font-bold text-yellow-400 border border-yellow-500/30 px-1 rounded bg-yellow-500/10">Ads Allowed</span> 
-                        button. Some free streams require popups to initialize.
-                    </p>
-                </div>
-             </div>
-             
-             <div className="p-4 bg-surfaceHighlight border border-white/5 rounded-xl flex items-start gap-3">
-                <ShieldCheck className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
-                <div>
-                    <h4 className="font-bold text-green-400 text-sm mb-1">Safe Streaming</h4>
-                    <p className="text-xs text-gray-400 leading-relaxed">
-                        We sandbox all players to protect your device. If you see ads, they are embedded in the video source and not hosted by us. Never download anything from player popups.
-                    </p>
-                </div>
-             </div>
-         </div>
       </div>
     </div>
   );

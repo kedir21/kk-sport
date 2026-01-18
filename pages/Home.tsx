@@ -8,10 +8,10 @@ import { Link } from 'react-router-dom';
 // Helper to map category names to icons
 const getCategoryIcon = (category: string) => {
   const normalized = category.toLowerCase();
-  if (normalized === 'football') return <Trophy className="w-5 h-5 text-red-500" />;
-  if (normalized === 'basketball') return <Target className="w-5 h-5 text-orange-500" />;
-  if (normalized === 'fighting') return <Dumbbell className="w-5 h-5 text-purple-500" />;
-  if (normalized === 'american football') return <Flame className="w-5 h-5 text-yellow-500" />;
+  if (normalized.includes('football') || normalized.includes('soccer')) return <Trophy className="w-5 h-5 text-red-500" />;
+  if (normalized.includes('basketball')) return <Target className="w-5 h-5 text-orange-500" />;
+  if (normalized.includes('fighting') || normalized.includes('mma') || normalized.includes('boxing')) return <Dumbbell className="w-5 h-5 text-purple-500" />;
+  if (normalized.includes('racing') || normalized.includes('f1')) return <Flame className="w-5 h-5 text-yellow-500" />;
   return <Activity className="w-5 h-5 text-primary-500" />;
 };
 
@@ -39,32 +39,20 @@ export const Home: React.FC = () => {
     loadData();
   }, []);
 
-  // Group live matches by category, filtering ONLY strictly allowed categories
+  // Group all live matches by their category dynamically
   const groupedLiveMatches = useMemo((): Record<string, APIMatch[]> => {
     const groups: Record<string, APIMatch[]> = {};
     
     liveMatches.forEach(match => {
-      const lowerCat = match.category.toLowerCase();
-      let groupKey = '';
+        // Capitalize the first letter for display
+        const categoryName = match.category 
+            ? match.category.charAt(0).toUpperCase() + match.category.slice(1) 
+            : 'Other';
 
-      // Strict categorization logic
-      if (lowerCat.includes('american') || lowerCat.includes('nfl')) {
-        groupKey = 'American Football';
-      } else if (lowerCat.includes('football') || lowerCat.includes('soccer')) {
-        groupKey = 'Football';
-      } else if (lowerCat.includes('basketball') || lowerCat.includes('nba')) {
-        groupKey = 'Basketball';
-      } else if (lowerCat.includes('mma') || lowerCat.includes('boxing') || lowerCat.includes('fighting') || lowerCat.includes('ufc')) {
-        groupKey = 'Fighting';
-      }
-
-      // Only add if it matches one of our target groups
-      if (groupKey) {
-        if (!groups[groupKey]) {
-          groups[groupKey] = [];
+        if (!groups[categoryName]) {
+            groups[categoryName] = [];
         }
-        groups[groupKey].push(match);
-      }
+        groups[categoryName].push(match);
     });
 
     return groups;

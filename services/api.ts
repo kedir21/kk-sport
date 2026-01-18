@@ -11,6 +11,9 @@ async function fetchJson<T>(endpoint: string): Promise<T> {
   try {
     const response = await fetch(url);
     if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error(`Match not found (404)`);
+      }
       console.error(`[API] HTTP Error ${response.status} for ${url}`);
       throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }
@@ -88,7 +91,7 @@ export const api = {
    * Get matches for a specific sport
    */
   getMatchesBySport: async (sportId: string) => {
-    const data = await fetchJson<any>(`/matches/${sportId}`);
+    const data = await fetchJson<any>(`/matches/${encodeURIComponent(sportId)}`);
     if (Array.isArray(data)) return data;
     if (data && Array.isArray(data.matches)) return data.matches;
     if (data && Array.isArray(data.data)) return data.data;
@@ -100,7 +103,8 @@ export const api = {
    * Get match details including streams
    */
   getMatchDetail: async (matchId: string) => {
-    const data = await fetchJson<any>(`/matches/${matchId}/detail`);
+    const cleanId = encodeURIComponent(matchId.trim());
+    const data = await fetchJson<any>(`/matches/${cleanId}/detail`);
     // Handle various API response structures
     if (data && data.id) return data; // Direct object
     if (data && data.match && data.match.id) return data.match; // Wrapped in match
