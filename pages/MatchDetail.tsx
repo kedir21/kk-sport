@@ -7,11 +7,13 @@ import {
   AlertTriangle, 
   ChevronLeft, 
   Shield, 
-  Monitor, 
   AlertCircle,
   Settings,
   Tv,
-  Info
+  Info,
+  Lock,
+  Unlock,
+  Play
 } from 'lucide-react';
 import { getImageUrl } from '../utils/formatters';
 
@@ -22,8 +24,9 @@ export const MatchDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeStream, setActiveStream] = useState<Stream | null>(null);
   
-  // Ad Block State
-  const [adBlockEnabled, setAdBlockEnabled] = useState(true);
+  // New Ad Blocking Method: Click Shield
+  // When true, a transparent overlay blocks interaction with the iframe
+  const [isPlayerLocked, setIsPlayerLocked] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
@@ -86,18 +89,18 @@ export const MatchDetail: React.FC = () => {
           <span className="text-sm font-medium">Back to Matches</span>
         </Link>
         
-        {/* Ad Block Toggle */}
+        {/* Ad Block / Click Shield Toggle */}
         <button 
-          onClick={() => setAdBlockEnabled(!adBlockEnabled)}
+          onClick={() => setIsPlayerLocked(!isPlayerLocked)}
           className={`
             flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border transition-all
-            ${adBlockEnabled 
-              ? 'bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20' 
+            ${isPlayerLocked 
+              ? 'bg-primary-500/10 border-primary-500/30 text-primary-400 hover:bg-primary-500/20' 
               : 'bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20'}
           `}
         >
-          <Shield className="w-3 h-3" />
-          {adBlockEnabled ? 'AdBlock Active' : 'AdBlock Disabled'}
+          {isPlayerLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+          {isPlayerLocked ? 'Player Locked (Safe)' : 'Player Unlocked'}
         </button>
       </div>
 
@@ -144,29 +147,29 @@ export const MatchDetail: React.FC = () => {
       </div>
 
       {/* Video Player */}
-      <div className="bg-black relative aspect-video w-full shadow-2xl z-20">
+      <div className="bg-black relative aspect-video w-full shadow-2xl z-20 overflow-hidden group">
         {activeStream ? (
            <div className="w-full h-full relative">
              <iframe 
-               key={`${activeStream.id}-${adBlockEnabled}`} // Force re-render on toggle
                src={activeStream.embedUrl} 
                title={title}
                className="w-full h-full border-0"
                allowFullScreen
-               // Sandbox attribute to block popups/redirects if AdBlock is ON
-               // We omit 'allow-popups' to block ads.
-               sandbox={adBlockEnabled 
-                 ? "allow-forms allow-pointer-lock allow-same-origin allow-scripts allow-top-navigation-by-user-activation allow-presentation" 
-                 : undefined
-               }
+               allow="encrypted-media; fullscreen; picture-in-picture"
+               // Sandbox removed as per request.
              />
              
-             {/* Ad Block Notice Overlay (Fades out) */}
-             {adBlockEnabled && (
-                <div className="absolute top-4 right-4 z-30 pointer-events-none animate-pulse">
-                  <span className="bg-green-600/90 text-white text-[10px] font-bold px-2 py-1 rounded backdrop-blur-sm shadow-lg flex items-center gap-1">
-                    <Shield className="w-3 h-3" /> Protected
-                  </span>
+             {/* Click Shield Overlay */}
+             {isPlayerLocked && (
+                <div 
+                  className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/60 backdrop-blur-[1px] cursor-pointer transition-opacity hover:bg-black/50"
+                  onClick={() => setIsPlayerLocked(false)}
+                >
+                   <div className="bg-primary-600 rounded-full p-4 mb-4 shadow-lg shadow-primary-500/30 animate-pulse">
+                      <Play className="w-8 h-8 text-white fill-current ml-1" />
+                   </div>
+                   <h3 className="text-xl font-bold text-white">Click to Play</h3>
+                   <p className="text-gray-300 text-sm mt-2">Safe Mode Active: Ads Blocked</p>
                 </div>
              )}
            </div>
@@ -191,7 +194,10 @@ export const MatchDetail: React.FC = () => {
              {match.sources.map((stream) => (
                <button
                  key={stream.id}
-                 onClick={() => setActiveStream(stream)}
+                 onClick={() => {
+                   setActiveStream(stream);
+                   setIsPlayerLocked(true); // Reset lock when changing stream for safety
+                 }}
                  className={`
                    group relative px-4 py-3 rounded-xl text-sm font-medium flex flex-col items-center gap-1 transition-all
                    ${activeStream?.id === stream.id 
@@ -220,11 +226,11 @@ export const MatchDetail: React.FC = () => {
             <p className="text-gray-500 text-sm">No servers available.</p>
          )}
 
-         <div className="mt-6 flex items-start gap-3 p-4 bg-blue-500/5 border border-blue-500/10 rounded-lg">
-            <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-            <div className="text-xs text-blue-200/80 leading-relaxed">
-              <p className="font-bold text-blue-400 mb-1">Streaming Tip</p>
-              If the stream refuses to load or shows a "Forbidden" error, try disabling the <span className="font-bold text-white">AdBlock</span> toggle above. Some providers require popups to be enabled to start the stream.
+         <div className="mt-6 flex items-start gap-3 p-4 bg-yellow-500/5 border border-yellow-500/10 rounded-lg">
+            <Info className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
+            <div className="text-xs text-yellow-200/80 leading-relaxed">
+              <p className="font-bold text-yellow-400 mb-1">Popup Protection</p>
+              The player is locked by default to prevent unwanted popups. Click the "Play" overlay to unlock and start the stream. If you experience issues, try a different server.
             </div>
          </div>
       </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, Search, Tv2 } from 'lucide-react';
+import { Menu, Search, Play } from 'lucide-react';
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -20,12 +20,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
           </button>
           
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="relative">
-              <div className="absolute -inset-1 bg-primary-500 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
-              <Tv2 className="w-6 h-6 text-primary-500 relative z-10" />
+            <div className="relative flex items-center justify-center w-8 h-8 bg-primary-600 rounded-lg transform -skew-x-12 group-hover:skew-x-0 transition-transform duration-300">
+              <Play className="w-4 h-4 text-white fill-current" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-white">
-              Stream<span className="text-primary-500">Zone</span>
+            <span className="text-xl font-black tracking-tighter text-white italic">
+              kk<span className="text-primary-500">-sport</span>
             </span>
           </Link>
         </div>
@@ -37,7 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
              </div>
              <input
                type="text"
-               placeholder="Find matches, teams, or events..."
+               placeholder="Search leagues, teams, or matches..."
                className="block w-full pl-10 pr-3 py-2 bg-surfaceHighlight/50 border border-border rounded-xl text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-200"
              />
            </div>
@@ -48,7 +47,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
             Login
           </button>
           <button className="bg-white text-black hover:bg-gray-200 font-bold py-2 px-5 rounded-full text-sm transition-all transform hover:scale-105 shadow-lg shadow-white/10">
-            Get Premium
+            VIP Pass
           </button>
         </div>
       </div>

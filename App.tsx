@@ -30,8 +30,8 @@ const App: React.FC = () => {
             
             <footer className="py-8 text-center text-gray-600 text-xs border-t border-white/5 mt-auto">
               <div className="max-w-4xl mx-auto px-4">
-                <p className="mb-2">Disclaimer: StreamZone does not host any content. All streams are embedded from external sources.</p>
-                <p>&copy; 2024 StreamZone. All rights reserved.</p>
+                <p className="mb-2">Disclaimer: kk-sport does not host any content. All streams are embedded from external sources.</p>
+                <p>&copy; 2024 kk-sport. All rights reserved.</p>
               </div>
             </footer>
           </main>
