@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Menu, Search, Play } from 'lucide-react';
 
 interface NavbarProps {
@@ -7,6 +7,17 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
+  const [query, setQuery] = useState('');
+  const navigate = useNavigate();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) {
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+      setQuery(''); // Optional: clear after search
+    }
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass-panel border-b border-border h-16 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
@@ -30,16 +41,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
         </div>
 
         <div className="hidden md:flex flex-1 max-w-lg mx-8">
-           <div className="relative w-full group">
+           <form onSubmit={handleSearch} className="relative w-full group">
              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                <Search className="h-4 w-4 text-gray-600 group-focus-within:text-primary-500 transition-colors" />
              </div>
              <input
                type="text"
+               value={query}
+               onChange={(e) => setQuery(e.target.value)}
                placeholder="Search leagues, teams, or matches..."
                className="block w-full pl-10 pr-3 py-2 bg-surfaceHighlight/50 border border-border rounded-xl text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-200"
              />
-           </div>
+           </form>
         </div>
 
         <div className="flex items-center gap-4">

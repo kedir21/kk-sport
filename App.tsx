@@ -6,6 +6,7 @@ import { Home } from './pages/Home';
 import { Schedule } from './pages/Schedule';
 import { SportView } from './pages/SportView';
 import { MatchDetail } from './pages/MatchDetail';
+import { Search } from './pages/Search';
 
 const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -22,6 +23,7 @@ const App: React.FC = () => {
             <div className="p-4 md:p-8 lg:p-10 max-w-[1600px] mx-auto min-h-[calc(100vh-10rem)]">
               <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path="/search" element={<Search />} />
                 <Route path="/schedule" element={<Schedule />} />
                 <Route path="/sport/:sportId" element={<SportView />} />
                 <Route path="/match/:matchId" element={<MatchDetail />} />

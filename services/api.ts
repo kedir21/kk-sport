@@ -37,6 +37,18 @@ export const api = {
   },
 
   /**
+   * Get all matches (used for search)
+   */
+  getAllMatches: async () => {
+    const data = await fetchJson<any>('/matches');
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.matches)) return data.matches;
+    if (data && Array.isArray(data.data)) return data.data;
+    console.warn('[API] Unexpected format for getAllMatches:', data);
+    return [];
+  },
+
+  /**
    * Get all live matches
    */
   getLiveMatches: async () => {
